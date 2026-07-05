@@ -91,6 +91,33 @@ with a reason) and an optional walkaround video (frames sampled, graded; a good 
 four exterior points). Signals (sunroof, wheels, CNG, tyres, odometer) are confirmed by the
 seller against the captured image — evidence-backed self-report.
 
+## 5b. Optional Smart Assist (Gemini) — opt-in, off by default
+The on-device CV above is the **default** and always runs (free, private, validated). Smart
+Assist is a **purely optional** layer: when — and only when — a `GEMINI_API_KEY` is configured,
+a captured frame for a signal point (roof, wheel, dashboard, engine bay, tyre, odometer) can also
+be sent to Google's Gemini multimodal model to *suggest* the answer, pre-filling the confirm step.
+
+**How it stays honest and safe:**
+- **Suggestion, never verdict.** Gemini returns one of the *same allowed option values* the manual
+  flow uses (from the catalog/condition specs) plus a self-reported confidence. The seller still
+  taps to confirm; the inspector still verifies. The UI shows "✨ AI suggests … — tap to confirm".
+- **Opt-in + off by default.** The toggle only appears if a key is set, and defaults to off.
+- **Privacy is explicit.** With Smart Assist ON, a captured frame leaves the device to Google —
+  the UI says so. The default on-device path sends nothing.
+- **Graceful degradation.** No key, an error, a timeout, or an "unsure" answer all fall back to
+  the normal on-device confirm flow — the product never breaks.
+- **Not "100% accurate" either.** Gemini is a strong model, not an oracle; we show its confidence
+  and keep the human-confirm loop. Same honesty rule as everywhere else.
+
+**Architecture:** `backend/app/smart_assist.py` (REST call, stdlib only — no extra dependency),
+gated by `backend/app/config.py` (`.env` loader). Endpoints: `GET /api/smart-assist/status`
+(drives the toggle) and `POST /api/smart-assist/analyze`. Enable via `.env` (see `.env.example`).
+
+> *Implementation note:* for analyzing a captured frame, the `generateContent` multimodal call is
+> the right tool (structured JSON output, cheaper, reliable). The streaming **Gemini Live** API
+> suits a real-time conversational walk-through — a heavier future option; the live "move closer"
+> guidance here is already handled for free on-device.
+
 ## 6. Honest scope & roadmap
 **Real today:** guided sequence; real per-frame quality analysis (validated); auto-capture;
 evidence-backed confidence + tighter ranges; on-device privacy.

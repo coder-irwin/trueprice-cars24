@@ -87,6 +87,17 @@ python -m venv .venv
 .venv/bin/python tests/vision_validation.py  # computer-vision reliability proof (11 checks)
 ```
 
+### Optional: Smart Assist (Gemini) — off by default
+The guided inspection runs on free, private, **on-device** computer vision out of the box. If you
+*want* AI to auto-suggest the variant/condition from each photo, you can enable an opt-in Gemini
+layer (you still confirm every suggestion):
+```bash
+cp .env.example .env          # then paste a free key from https://aistudio.google.com/apikey
+# restart the server — a "✨ Smart Assist" toggle appears on /inspect.html
+```
+`.env` is gitignored (never committed). With it **on**, captured frames are sent to Google; with
+it **off** (default), nothing leaves your device. Details: [`docs/08-vision.md`](docs/08-vision.md) §5b.
+
 ### Beginner troubleshooting
 | Problem | Fix |
 |---|---|

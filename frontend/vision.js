@@ -92,6 +92,7 @@ const state = {
   catalog: null, featureQ: {}, disclosures: {},
   car: {}, captures: {}, // id -> {quality, thumb}
   variantAnswers: {}, conditionAnswers: {}, odometer: null,
+  smart: { enabled: false }, useSmart: false,
 };
 
 async function api(path, body) {
@@ -115,6 +116,24 @@ async function init() {
   yr.value = now - 4;
   $("mode-camera").onclick = () => { readBasics(); startCamera(); };
   $("mode-upload").onclick = () => { readBasics(); startUpload(); };
+  // Smart Assist (Gemini) — only surfaced if the server has a key configured.
+  try {
+    state.smart = await api("/api/smart-assist/status");
+    if (state.smart.enabled) {
+      $("smart-toggle").classList.remove("hidden");
+      $("smart-check").addEventListener("change", (e) => { state.useSmart = e.target.checked; });
+    }
+  } catch (e) { /* smart assist optional; ignore */ }
+}
+
+// Ask Gemini to suggest a signal from a captured frame. Always safe; returns null on any issue.
+async function smartSuggest(point, thumb) {
+  if (!state.smart.enabled || !state.useSmart || !point.signal) return null;
+  try {
+    const r = await api("/api/smart-assist/analyze",
+      { point_id: point.id, image: thumb, make: state.car.make, model: state.car.model });
+    return r && r.available ? r : null;
+  } catch (e) { return null; }
 }
 function curModel() { return state.catalog.models[+$("model").value]; }
 function onModel() {
@@ -215,41 +234,63 @@ function finishCamera() {
 }
 
 // ---- 4. CONFIRM MODAL ----------------------------------------------------------------
-function pauseAndConfirm(point, thumb, done) {
+async function pauseAndConfirm(point, thumb, done) {
   const modal = $("confirm-modal");
   $("confirm-thumb").style.backgroundImage = `url(${thumb})`;
   const sig = point.signal;
-  let question, why, options;
+  if (sig.type === "odometer") { showOdo(modal, point, thumb, done); return; }
+
+  let question, why, options, onPick;
   if (sig.type === "variant") {
     const q = state.featureQ[sig.feature]; question = q.question; why = "Confirm what your captured photo shows.";
-    options = q.options; var onPick = (v) => { state.variantAnswers[sig.feature] = v; };
-  } else if (sig.type === "condition") {
+    options = q.options; onPick = (v) => { state.variantAnswers[sig.feature] = v; };
+  } else { // condition
     const d = state.disclosures[sig.field]; question = d.question; why = d.why_it_matters;
-    options = d.options; var onPick = (v) => { state.conditionAnswers[sig.field] = v; };
-  } else if (sig.type === "odometer") {
-    question = "What does the odometer read?"; why = "Enter the exact number your photo shows.";
-    showOdo(modal, done); return;
+    options = d.options; onPick = (v) => { state.conditionAnswers[sig.field] = v; };
   }
   $("confirm-q").textContent = question; $("confirm-why").textContent = why;
   const box = $("confirm-choices"); box.innerHTML = "";
+  const badge = smartBadge(box);
+  const btns = {};
   options.forEach(opt => {
     const b = document.createElement("button"); b.className = "choice";
     b.innerHTML = `<span class="dot"></span><span>${opt.label}</span>`;
     b.onclick = () => { onPick(opt.value); modal.classList.add("hidden"); done(); };
-    box.appendChild(b);
+    box.appendChild(b); btns[opt.value] = b;
   });
   modal.classList.remove("hidden");
+  // Optional Gemini suggestion — highlights a choice, never auto-submits.
+  const s = await smartSuggest(point, thumb);
+  if (s && s.detected && btns[s.detected]) {
+    btns[s.detected].classList.add("ai");
+    badge.className = "ai-badge";
+    badge.innerHTML = `✨ AI suggests: <b style="margin-left:4px">${btns[s.detected].textContent.trim()}</b> · ${Math.round((s.confidence||0)*100)}% — tap to confirm`;
+  } else if (s) {
+    badge.className = "ai-badge thinking"; badge.textContent = `✨ ${s.note || "AI wasn't sure — pick what you see"}`;
+  } else { badge.remove(); }
 }
-function showOdo(modal, done) {
+function smartBadge(box) {
+  const badge = document.createElement("div");
+  if (state.useSmart && state.smart.enabled) { badge.className = "ai-badge thinking"; badge.textContent = "✨ Smart Assist analysing…"; }
+  box.parentNode.insertBefore(badge, box);
+  return badge;
+}
+function showOdo(modal, point, thumb, done) {
   $("confirm-q").textContent = "What does the odometer read?";
   $("confirm-why").textContent = "Enter the exact number your photo shows (in km).";
   const box = $("confirm-choices"); box.innerHTML = "";
+  const badge = smartBadge(box);
   const inp = document.createElement("input"); inp.type = "number"; inp.min = 0; inp.placeholder = "e.g. 45000";
   inp.style.marginBottom = "10px";
   const b = document.createElement("button"); b.className = "btn-primary"; b.textContent = "Confirm reading";
   b.onclick = () => { state.odometer = +inp.value || null; modal.classList.add("hidden"); done(); };
   box.appendChild(inp); box.appendChild(b);
   modal.classList.remove("hidden");
+  smartSuggest(point, thumb).then(s => {
+    if (s && s.detected != null) { inp.value = s.detected; badge.className = "ai-badge"; badge.innerHTML = `✨ AI read <b style="margin-left:4px">${(+s.detected).toLocaleString("en-IN")} km</b> · ${Math.round((s.confidence||0)*100)}% — check &amp; confirm`; }
+    else if (s) { badge.className = "ai-badge thinking"; badge.textContent = `✨ ${s.note || "Couldn't read it — type it in"}`; }
+    else badge.remove();
+  });
 }
 
 // ---- 5. UPLOAD PATH ------------------------------------------------------------------

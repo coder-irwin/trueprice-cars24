@@ -26,6 +26,8 @@ import variant_resolver
 import pricing
 import condition as cond
 import evidence as ev
+import smart_assist
+import config
 
 app = FastAPI(title="TruePrice API",
               description="Variant-aware, condition-honest, confidence-scored used-car "
@@ -113,6 +115,27 @@ class EvidencePack(BaseModel):
 @app.post("/api/evidence/score")
 def evidence_score(pack: EvidencePack):
     return ev.score(pack.points)
+
+
+@app.get("/api/smart-assist/status")
+def smart_assist_status():
+    # Lets the UI show the opt-in toggle only when a Gemini key is configured.
+    return {"enabled": config.smart_assist_enabled(),
+            "model": config.GEMINI_MODEL if config.smart_assist_enabled() else None}
+
+
+class SmartAssistRequest(BaseModel):
+    point_id: str
+    image: str                 # base64 JPEG (no data: prefix)
+    make: str = ""
+    model: str = ""
+
+
+@app.post("/api/smart-assist/analyze")
+def smart_assist_analyze(req: SmartAssistRequest):
+    # Strip a data-URL prefix if the client sent one.
+    img = req.image.split(",", 1)[-1] if req.image.startswith("data:") else req.image
+    return smart_assist.analyze(req.point_id, img, req.make, req.model)
 
 
 @app.post("/api/variant/resolve")
