@@ -121,7 +121,8 @@ def estimate(car: dict, segment: str,
              variant_confidence: float = 1.0,
              variant_price_spread: float = 0.0,
              disclosures: Optional[Dict[str, str]] = None,
-             include_breakdown: bool = True) -> dict:
+             include_breakdown: bool = True,
+             evidence_strength: float = 0.0) -> dict:
     """Produce the honest estimate for a fully-specified car.
 
     variant_confidence  : top posterior from the resolver (1.0 if user is certain).
@@ -136,6 +137,11 @@ def estimate(car: dict, segment: str,
     # --- Confidence score (0-100) -------------------------------------------------
     disc_complete = cond.completeness(disclosures)
     confidence = 100.0 * (0.6 * variant_confidence + 0.4 * disc_complete)
+    # Photo/video evidence is a modest, honest uplift: a quality-gated, timestamped image
+    # backing an input is more trustworthy than a typed dropdown. Capped small on purpose —
+    # evidence raises input trust, it does not replace the physical inspection.
+    evidence_strength = max(0.0, min(1.0, evidence_strength))
+    confidence += 6.0 * evidence_strength
     confidence = max(20.0, min(100.0, confidence))
 
     # --- Honest range widening ----------------------------------------------------
@@ -150,7 +156,8 @@ def estimate(car: dict, segment: str,
     # Undisclosed-condition uncertainty: up to ~4% of p50 when nothing is disclosed.
     disclosure_widen = p50 * 0.04 * (1.0 - disc_complete)
 
-    extra = variant_widen + disclosure_widen
+    # Evidence you captured confirms inputs, so it shrinks the residual input uncertainty.
+    extra = (variant_widen + disclosure_widen) * (1.0 - 0.4 * evidence_strength)
     low = p50 - (base_low + extra)
     high = p50 + (base_high + extra)
 
@@ -165,6 +172,10 @@ def estimate(car: dict, segment: str,
         "what_could_change": cond.negative_disclosures(disclosures),
         "uncertainty_sources": _uncertainty_sources(
             variant_confidence, variant_price_spread, disc_complete),
+        "evidence_note": (
+            f"Backed by your inspection photos — inputs are confirmed with images, not just "
+            f"typed. This tightened your range and lifted confidence."
+            if evidence_strength >= 0.3 else None),
         "disclaimer": (
             "This is a data-driven prediction, not a final offer. The final price is set "
             "after a physical inspection and a live auction. The range reflects how "

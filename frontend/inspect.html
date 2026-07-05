@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TruePrice — Guided AI Inspection</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/vision.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">TP</div>
+      <div>
+        <div class="brandname">TruePrice · Guided Inspection</div>
+        <div class="tagline">Your camera, guided step by step — real analysis, honest confidence.</div>
+      </div>
+    </header>
+
+    <!-- STAGE 1: basics -->
+    <section class="card" id="stage-basics">
+      <h2>First, the basics</h2>
+      <p class="sub">Then we'll walk your camera around the car — or you can upload photos/video.</p>
+      <div class="grid">
+        <div class="field full"><label for="model">Make &amp; model</label><select id="model"></select></div>
+        <div class="field"><label for="fuel">Fuel</label><select id="fuel"></select></div>
+        <div class="field"><label for="transmission">Transmission</label><select id="transmission"></select></div>
+        <div class="field"><label for="year">Manufacturing year</label><select id="year"></select></div>
+        <div class="field"><label for="owners">Owners</label>
+          <select id="owners"><option value="1">1st owner</option><option value="2">2nd owner</option>
+          <option value="3">3rd owner</option><option value="4">4th owner or more</option></select></div>
+        <div class="field"><label for="city_tier">City</label>
+          <select id="city_tier"><option value="metro">Metro</option><option value="tier2">Tier-2</option>
+          <option value="tier3">Tier-3 / town</option></select></div>
+        <div class="field"><label for="color">Colour</label>
+          <select id="color"><option value="neutral">White / Silver / Grey</option>
+          <option value="standard">Red / Blue / Black</option><option value="niche">Other</option></select></div>
+      </div>
+      <div class="modepick">
+        <button class="modecard" id="mode-camera">
+          <div class="mi">📷</div><div><b>Start guided camera</b><span>We direct you shot by shot and auto-capture each part.</span></div>
+        </button>
+        <button class="modecard" id="mode-upload">
+          <div class="mi">📁</div><div><b>Upload photos / video</b><span>Already have them? We'll grade and use each one.</span></div>
+        </button>
+      </div>
+      <p class="privacy">🔒 Your photos and video are analysed <b>on your device</b>. Raw media is never uploaded — only a small quality summary.</p>
+    </section>
+
+    <!-- STAGE 2: camera -->
+    <section class="card hidden" id="stage-camera">
+      <div class="pointhead">
+        <div><span class="pill" id="cam-progress">1 / 10</span></div>
+        <h2 id="cam-title">Front of the car</h2>
+        <p class="sub" id="cam-instruction"></p>
+      </div>
+      <div class="camstage">
+        <video id="video" playsinline autoplay muted></video>
+        <div class="overlay">
+          <div class="qring" id="qring"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="prog" id="qprog" cx="50" cy="50" r="44"/></svg><span id="qval">0</span></div>
+          <div class="guidance" id="guidance"><span class="dotpulse"></span><span id="guidance-txt">Point at the car…</span></div>
+        </div>
+        <canvas id="analysis" width="160" height="120" class="hidden"></canvas>
+        <canvas id="capture" class="hidden"></canvas>
+      </div>
+      <div class="camctrls">
+        <button class="btn-ghost" id="cam-skip">Skip this shot</button>
+        <button class="btn-primary" id="cam-manual">Capture now</button>
+      </div>
+      <div class="filmstrip" id="filmstrip"></div>
+    </section>
+
+    <!-- STAGE 2b: upload -->
+    <section class="card hidden" id="stage-upload">
+      <h2>Upload what you have</h2>
+      <p class="sub">Add a photo for each part (or a full walkaround video). We grade each one on
+        your device and tell you if it's clear enough to rely on.</p>
+      <div class="field full" style="margin-bottom:18px">
+        <label for="videofile">Walkaround video (optional)</label>
+        <input type="file" id="videofile" accept="video/*" />
+        <div class="hint" id="video-status"></div>
+      </div>
+      <div id="upload-points"></div>
+      <div class="row end"><button class="btn-primary" id="upload-done">Analyse &amp; estimate →</button></div>
+    </section>
+
+    <!-- confirm modal -->
+    <div class="modal hidden" id="confirm-modal">
+      <div class="modal-card">
+        <div class="modal-thumb" id="confirm-thumb"></div>
+        <h3 id="confirm-q">Confirm</h3>
+        <p class="sub" id="confirm-why"></p>
+        <div class="choices" id="confirm-choices"></div>
+      </div>
+    </div>
+
+    <!-- STAGE 3: result -->
+    <section class="card hidden" id="stage-result"><div id="result-body"></div>
+      <div class="row"><button class="btn-primary" onclick="location.reload()">Start over</button>
+      <a href="/" class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center">Back to home</a></div>
+    </section>
+
+    <footer>Guided inspection runs real computer-vision quality checks on-device. Estimates are
+      predictions, not offers. Demonstration MVP on synthetic data.</footer>
+  </div>
+  <script src="/vision.js"></script>
+</body>
+</html>

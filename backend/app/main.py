@@ -20,11 +20,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from catalog import CATALOG, get_model
+from catalog import CATALOG, get_model, FEATURE_QUESTIONS
 from features import CATEGORY_VALUES
 import variant_resolver
 import pricing
 import condition as cond
+import evidence as ev
 
 app = FastAPI(title="TruePrice API",
               description="Variant-aware, condition-honest, confidence-scored used-car "
@@ -63,6 +64,8 @@ class CarInput(BaseModel):
     # optional signals from the resolver step
     variant_confidence: float = 1.0
     variant_price_spread: float = 0.0
+    # optional signal from the guided-inspection evidence pack (0-1)
+    evidence_strength: float = 0.0
 
 
 # ---- Routes ---------------------------------------------------------------------------
@@ -91,7 +94,25 @@ def catalog():
             "options": [{"value": val, "label": opt["label"]}
                         for val, opt in spec["options"].items()],
         })
-    return {"models": out, "category_values": CATEGORY_VALUES, "disclosures": disclosures}
+    # Expose the variant feature questions so the camera flow can confirm what it captured.
+    feature_questions = []
+    for feat, spec in FEATURE_QUESTIONS.items():
+        feature_questions.append({
+            "feature": feat, "question": spec["question"],
+            "options": [{"value": val, "label": lbl}
+                        for val, lbl in spec["options"].items()],
+        })
+    return {"models": out, "category_values": CATEGORY_VALUES,
+            "disclosures": disclosures, "feature_questions": feature_questions}
+
+
+class EvidencePack(BaseModel):
+    points: List[Dict[str, object]] = Field(default_factory=list)
+
+
+@app.post("/api/evidence/score")
+def evidence_score(pack: EvidencePack):
+    return ev.score(pack.points)
 
 
 @app.post("/api/variant/resolve")
@@ -117,6 +138,7 @@ def estimate(car: CarInput):
             variant_confidence=car.variant_confidence,
             variant_price_spread=car.variant_price_spread,
             disclosures=disclosures,
+            evidence_strength=car.evidence_strength,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
