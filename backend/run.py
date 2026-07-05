@@ -18,6 +18,18 @@ for p in (os.path.join(ROOT, "model"), os.path.join(ROOT, "backend", "app")):
 import uvicorn  # noqa: E402
 
 if __name__ == "__main__":
+    # Friendly guard: the app needs the trained model. If it's missing, tell the user
+    # exactly what to do instead of failing later on the first request.
+    model_path = os.path.join(ROOT, "model", "pricing_model.joblib")
+    if not os.path.exists(model_path):
+        sys.exit(
+            "\n❌ Pricing model not found (model/pricing_model.joblib).\n"
+            "   Build it first:\n"
+            "     python model/generate_data.py --rows 24000\n"
+            "     python model/train.py\n"
+            "   ...or just run ./setup.sh once.\n")
+
     host = os.environ.get("HOST", "127.0.0.1")
     port = int(os.environ.get("PORT", "8000"))
+    print(f"🚗 TruePrice → http://{host}:{port}  (Ctrl+C to stop)")
     uvicorn.run("main:app", host=host, port=port, reload=False)

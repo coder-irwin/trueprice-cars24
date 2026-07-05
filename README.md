@@ -53,29 +53,48 @@ removing the aspiration-bias variant overshoot and widening honestly for the res
 
 ---
 
-## Quick start
+## Quick start (novice-friendly)
 
+**You need:** Python 3.10+ and a terminal. That's it. (Check with `python3 --version`.)
+
+### macOS / Linux — two commands
 ```bash
-# 1. Environment (one-time)
-python3 -m venv .venv
-.venv/bin/python -m pip install -U pip numpy scikit-learn pandas joblib "fastapi" "uvicorn[standard]"
+./setup.sh     # creates a venv, installs deps, builds data, trains the model (~2 min)
+./run.sh       # starts the app at http://127.0.0.1:8000
+```
+Then open **http://127.0.0.1:8000** in your browser. Press `Ctrl+C` to stop.
 
-# 2. Build data + train model (reproducible)
-.venv/bin/python model/generate_data.py --rows 24000
-.venv/bin/python model/train.py
+> First time only: if the scripts aren't executable, run `chmod +x setup.sh run.sh` once.
 
-# 3. Run the product
-.venv/bin/python backend/run.py        # -> http://127.0.0.1:8000
-
-# 4. Verify
-.venv/bin/python tests/test_core.py          # unit tests (3 pillars)
-.venv/bin/python tests/backtest.py           # below-floor-rate demonstration
-.venv/bin/python tests/vision_validation.py  # CV metric reliability proof
+### Windows (PowerShell)
+```powershell
+python -m venv .venv
+.venv\Scripts\python -m pip install -U pip -r requirements.txt
+.venv\Scripts\python model\generate_data.py --rows 24000
+.venv\Scripts\python model\train.py
+.venv\Scripts\python backend\run.py       # -> http://127.0.0.1:8000
 ```
 
-Open **http://127.0.0.1:8000** and walk the seller wizard: basics → variant resolver →
-condition → honest estimate. Or try **http://127.0.0.1:8000/inspect.html** for the guided
-camera / upload inspection (use a device with a camera for the live flow).
+### What to open
+- **http://127.0.0.1:8000/** — the seller wizard: basics → variant resolver → condition → honest estimate.
+- **http://127.0.0.1:8000/inspect.html** — the guided camera / upload inspection *(use a phone or
+  laptop with a camera for the live walk-around; upload works anywhere)*.
+
+### Verify it all works (optional)
+```bash
+.venv/bin/python tests/test_core.py          # 11 unit tests (the honesty invariants)
+.venv/bin/python tests/backtest.py           # below-floor-rate: old vs TruePrice (~1–2 min)
+.venv/bin/python tests/vision_validation.py  # computer-vision reliability proof (11 checks)
+```
+
+### Beginner troubleshooting
+| Problem | Fix |
+|---|---|
+| `python3: command not found` | Install Python 3.10+ from python.org, then retry. |
+| `pip` / install errors | Make sure you ran `./setup.sh` (it uses an isolated `.venv`, so it won't touch your system Python). |
+| “Pricing model not found” | Run `./setup.sh` once before `./run.sh`. |
+| Port 8000 busy | `PORT=8080 ./run.sh` (then open http://127.0.0.1:8080). |
+| Camera doesn’t start | Browsers only allow the camera on `localhost` (fine here) or HTTPS; allow the camera permission prompt, or use the **Upload** option. |
 
 ---
 

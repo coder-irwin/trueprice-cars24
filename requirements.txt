@@ -1,11 +1,9 @@
-fastapi==0.139.0
-joblib==1.5.3
-numpy==2.5.1
-pandas==3.0.3
-pydantic==2.13.4
-pydantic_core==2.46.4
-scikit-learn==1.9.0
-scipy==1.18.0
-starlette==1.3.1
-threadpoolctl==3.6.0
-uvicorn==0.50.0
+# TruePrice dependencies — all free & open-source.
+# Version floors chosen for broad compatibility (Python 3.10+). The project was
+# developed and verified on the exact versions noted in the comments.
+numpy>=1.26            # dev: 2.5.1
+scikit-learn>=1.3      # dev: 1.9.0
+pandas>=2.0            # dev: 3.0.3
+joblib>=1.3            # dev: 1.5.3
+fastapi>=0.110         # dev: 0.139.0
+uvicorn>=0.27          # dev: 0.50.0
