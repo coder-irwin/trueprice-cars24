@@ -54,6 +54,38 @@ def _spec_for_point(point_id: str):
     return None
 
 
+def health() -> dict:
+    """Probe the configured key so operators/users see the REAL state instead of a silent
+    fallback: disabled (no key) / ready / quota_exhausted / invalid_key / error.
+
+    Makes one tiny generateContent call, so it's called on demand (when the user opts in),
+    not on every page load."""
+    if not config.smart_assist_enabled():
+        return {"state": "disabled", "detail": "No GEMINI_API_KEY configured."}
+    body = {"contents": [{"parts": [{"text": "ping"}]}],
+            "generationConfig": {"maxOutputTokens": 4}}
+    url = _ENDPOINT.format(model=config.GEMINI_MODEL, key=config.GEMINI_API_KEY)
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                 headers={"content-type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+        return {"state": "ready", "model": config.GEMINI_MODEL}
+    except urllib.error.HTTPError as e:
+        try:
+            msg = json.loads(e.read().decode()).get("error", {}).get("message", "")
+        except Exception:
+            msg = ""
+        if e.code == 429:
+            return {"state": "quota_exhausted",
+                    "detail": msg or "Rate/quota limit reached — will fall back on-device."}
+        if e.code in (400, 403):
+            return {"state": "invalid_key", "detail": msg or "API key rejected."}
+        return {"state": "error", "detail": f"HTTP {e.code}: {msg}".strip()}
+    except (urllib.error.URLError, TimeoutError) as e:
+        return {"state": "error", "detail": f"Network error ({type(e).__name__})."}
+
+
 def _call_gemini(prompt: str, image_b64: str, schema: dict) -> dict:
     body = {
         "contents": [{"parts": [

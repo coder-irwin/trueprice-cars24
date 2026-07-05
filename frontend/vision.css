@@ -83,3 +83,9 @@
   color: var(--accent); border: 1px solid color-mix(in srgb,var(--accent) 30%,transparent); }
 .ai-badge.thinking { color: var(--ink-soft); background: var(--surface-2); border-color: var(--line); }
 .choice.ai { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+
+/* Smart Assist health line — real reachability state, not just "key present" */
+.smart-health { display: block; margin-top: 6px; font-weight: 700; font-size: 12px; }
+.smart-health.checking { color: var(--ink-faint); }
+.smart-health.ready { color: var(--good); }
+.smart-health.quota_exhausted, .smart-health.invalid_key, .smart-health.error { color: var(--bad); }

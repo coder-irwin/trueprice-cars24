@@ -96,7 +96,10 @@ cp .env.example .env          # then paste a free key from https://aistudio.goog
 # restart the server — a "✨ Smart Assist" toggle appears on /inspect.html
 ```
 `.env` is gitignored (never committed). With it **on**, captured frames are sent to Google; with
-it **off** (default), nothing leaves your device. Details: [`docs/08-vision.md`](docs/08-vision.md) §5b.
+it **off** (default), nothing leaves your device. Flipping the toggle runs a real connectivity
+check and shows the true state — `✓ Connected`, `⚠ Quota exhausted`, `⚠ Key rejected`, etc. — so a
+dead or rate-limited key is obvious immediately instead of silently falling back mid-inspection.
+Details: [`docs/08-vision.md`](docs/08-vision.md) §5b · [`docs/05-api.md`](docs/05-api.md).
 
 ### Beginner troubleshooting
 | Problem | Fix |

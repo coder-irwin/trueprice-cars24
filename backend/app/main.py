@@ -120,8 +120,17 @@ def evidence_score(pack: EvidencePack):
 @app.get("/api/smart-assist/status")
 def smart_assist_status():
     # Lets the UI show the opt-in toggle only when a Gemini key is configured.
+    # Cheap/instant — does NOT call Gemini. Use /health for a real reachability probe.
     return {"enabled": config.smart_assist_enabled(),
             "model": config.GEMINI_MODEL if config.smart_assist_enabled() else None}
+
+
+@app.get("/api/smart-assist/health")
+def smart_assist_health():
+    # Makes one real call to Gemini so the UI can show the TRUE state:
+    # disabled (no key) / ready / quota_exhausted / invalid_key / error.
+    # Called on demand (when the user opts in), not on every page load.
+    return smart_assist.health()
 
 
 class SmartAssistRequest(BaseModel):

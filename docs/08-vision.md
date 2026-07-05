@@ -111,7 +111,17 @@ be sent to Google's Gemini multimodal model to *suggest* the answer, pre-filling
 
 **Architecture:** `backend/app/smart_assist.py` (REST call, stdlib only — no extra dependency),
 gated by `backend/app/config.py` (`.env` loader). Endpoints: `GET /api/smart-assist/status`
-(drives the toggle) and `POST /api/smart-assist/analyze`. Enable via `.env` (see `.env.example`).
+(cheap, drives the toggle visibility), `GET /api/smart-assist/health` (makes one real Gemini call
+so the UI shows the *true* reachability state — `ready` / `quota_exhausted` / `invalid_key` /
+`error` — instead of a silent fallback the first time it's needed), and
+`POST /api/smart-assist/analyze`. Full request/response shapes in `docs/05-api.md`. Enable via
+`.env` (see `.env.example`).
+
+**Why a separate health probe matters:** a key can be syntactically valid but functionally dead
+(e.g. Google's prepay-billing model returns HTTP 429 "credits depleted" even though the key
+authenticates fine). Checking `/status` alone would show the toggle as available and then fail
+silently on first use. `/health` is called the moment the user opts in, so a dead key is visible
+immediately with the real reason, not discovered mid-inspection.
 
 > *Implementation note:* for analyzing a captured frame, the `generateContent` multimodal call is
 > the right tool (structured JSON output, cheaper, reliable). The streaming **Gemini Live** API

@@ -121,9 +121,39 @@ async function init() {
     state.smart = await api("/api/smart-assist/status");
     if (state.smart.enabled) {
       $("smart-toggle").classList.remove("hidden");
-      $("smart-check").addEventListener("change", (e) => { state.useSmart = e.target.checked; });
+      $("smart-check").addEventListener("change", onSmartToggle);
     }
   } catch (e) { /* smart assist optional; ignore */ }
+}
+
+const SMART_HEALTH_MSG = {
+  ready: "✓ Connected — suggestions will appear as you capture shots.",
+  quota_exhausted: "⚠ Quota exhausted on this key — falling back to on-device only.",
+  invalid_key: "⚠ Key rejected by Google — falling back to on-device only.",
+  error: "⚠ Couldn't reach Gemini right now — falling back to on-device only.",
+  disabled: "No key configured.",
+};
+
+// Probe REAL reachability (not just "a key is set") the moment the user opts in, so a
+// quota-exhausted or invalid key is visible instead of silently degrading later.
+async function onSmartToggle(e) {
+  const on = e.target.checked;
+  const health = $("smart-health");
+  if (!on) { state.useSmart = false; health.classList.add("hidden"); return; }
+  health.classList.remove("hidden", "ready", "quota_exhausted", "invalid_key", "error");
+  health.classList.add("checking");
+  health.textContent = "Checking connection…";
+  try {
+    const h = await api("/api/smart-assist/health");
+    health.classList.remove("checking");
+    health.classList.add(h.state);
+    health.textContent = SMART_HEALTH_MSG[h.state] || h.detail || "Unknown status.";
+    state.useSmart = h.state === "ready";
+  } catch (err) {
+    health.classList.remove("checking"); health.classList.add("error");
+    health.textContent = SMART_HEALTH_MSG.error;
+    state.useSmart = false;
+  }
 }
 
 // Ask Gemini to suggest a signal from a captured frame. Always safe; returns null on any issue.

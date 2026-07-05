@@ -85,3 +85,46 @@ Produce the honest, explainable estimate for a fully-specified car.
 ## Errors
 `400` with `{ "detail": "…" }` for unknown model/variant or invalid input (validated by
 Pydantic: `age` 0–25, `km` 0–500000, `owners` 1–6, etc.).
+
+---
+
+## Smart Assist (optional Gemini layer) — see `docs/08-vision.md` §5b
+Off by default; only meaningful if `GEMINI_API_KEY` is set in `.env`.
+
+### `GET /api/smart-assist/status`
+Cheap, instant — does **not** call Gemini. Tells the UI whether to show the opt-in toggle.
+```json
+{ "enabled": true, "model": "gemini-2.5-flash" }
+```
+
+### `GET /api/smart-assist/health`
+Makes **one real call** to Gemini so the caller sees the true reachability state, rather than
+discovering a bad key only when an analysis silently falls back. Called on demand (e.g. when the
+user flips the toggle on), not on every page load.
+```json
+{ "state": "ready", "model": "gemini-2.5-flash" }
+```
+`state` is one of:
+| State | Meaning |
+|---|---|
+| `disabled` | No `GEMINI_API_KEY` configured |
+| `ready` | Key is valid and the API responded normally |
+| `quota_exhausted` | Key is valid but out of prepay credits / rate-limited (HTTP 429) |
+| `invalid_key` | Google rejected the key (HTTP 400/403) |
+| `error` | Network issue or a transient upstream error (e.g. HTTP 503) — usually worth retrying |
+
+### `POST /api/smart-assist/analyze`
+Suggests a value for one captured inspection-point photo. Always safe to call — degrades to
+`available: false` if Smart Assist isn't configured or reachable.
+```json
+// request
+{ "point_id": "roof", "image": "<base64 jpeg, no data: prefix>",
+  "make": "Hyundai", "model": "Creta" }
+// response (suggestion made)
+{ "available": true, "detected": "single", "kind": "enum", "label": "Yes, a single sunroof",
+  "confidence": 0.82, "reason": "…", "note": "AI suggestion — please confirm." }
+// response (unsure / not configured / unreachable)
+{ "available": true, "detected": null, "confidence": 0.0,
+  "note": "AI wasn't sure — please pick what you see." }
+```
+The seller/inspector always makes the final choice — this only pre-fills a suggestion.
