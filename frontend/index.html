@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TruePrice — an estimate you can trust</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">TP</div>
+      <div>
+        <div class="brandname">TruePrice</div>
+        <div class="tagline">An estimate you can trust — the variant and condition, done right.</div>
+      </div>
+    </header>
+
+    <div class="steps" id="steps">
+      <div class="s active"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+    </div>
+
+    <!-- STEP 1: Basics -->
+    <section class="card step active" id="step-basics">
+      <h2>Tell us about your car</h2>
+      <p class="sub">We start with the basics. Next we'll pin the exact variant — the single
+        biggest reason online estimates miss.</p>
+      <div class="grid">
+        <div class="field full">
+          <label for="model">Make &amp; model</label>
+          <select id="model"></select>
+        </div>
+        <div class="field">
+          <label for="fuel">Fuel</label>
+          <select id="fuel"></select>
+        </div>
+        <div class="field">
+          <label for="transmission">Transmission</label>
+          <select id="transmission"></select>
+        </div>
+        <div class="field">
+          <label for="year">Manufacturing year</label>
+          <select id="year"></select>
+        </div>
+        <div class="field">
+          <label for="km">Kilometres driven</label>
+          <input type="number" id="km" min="0" max="500000" step="1000" value="45000" />
+        </div>
+        <div class="field">
+          <label for="owners">Number of owners</label>
+          <select id="owners">
+            <option value="1">1st owner</option>
+            <option value="2">2nd owner</option>
+            <option value="3">3rd owner</option>
+            <option value="4">4th owner or more</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="city_tier">City</label>
+          <select id="city_tier">
+            <option value="metro">Metro (Delhi/Mumbai/Bengaluru…)</option>
+            <option value="tier2">Tier-2 city</option>
+            <option value="tier3">Tier-3 / smaller town</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="color">Colour</label>
+          <select id="color">
+            <option value="neutral">White / Silver / Grey</option>
+            <option value="standard">Red / Blue / Black</option>
+            <option value="niche">Other / unusual colour</option>
+          </select>
+        </div>
+      </div>
+      <div class="row end">
+        <button class="btn-primary" onclick="App.toResolver()">Continue →</button>
+      </div>
+    </section>
+
+    <!-- STEP 2: Variant resolver -->
+    <section class="card step" id="step-variant">
+      <h2>Let's confirm the exact variant</h2>
+      <p class="sub">4 in 10 cars turn out to be a different variant than the seller picked —
+        which alone can move the price 15–20%. Answer a couple of quick questions and we'll
+        pin it from what you can actually see.</p>
+      <div id="resolver-body"></div>
+      <div class="cands" id="candidates"></div>
+      <div class="hint">Prefer to pick it yourself?
+        <button class="linkbtn" onclick="App.showManualVariant()">Choose variant manually</button>
+      </div>
+      <div class="row">
+        <button class="btn-ghost" onclick="App.goto('basics')">← Back</button>
+        <button class="btn-primary" id="variant-next" onclick="App.toCondition()" disabled>Continue →</button>
+      </div>
+    </section>
+
+    <!-- STEP 3: Condition -->
+    <section class="card step" id="step-condition">
+      <h2>A few honest condition details</h2>
+      <p class="sub">These are the things an inspection always checks. Telling us now means no
+        surprises at your door — and a tighter, more trustworthy range.</p>
+      <div id="condition-body"></div>
+      <div class="row">
+        <button class="btn-ghost" onclick="App.goto('variant')">← Back</button>
+        <button class="btn-primary" onclick="App.getEstimate()">See my honest estimate →</button>
+      </div>
+    </section>
+
+    <!-- STEP 4: Result -->
+    <section class="card step" id="step-result">
+      <div id="result-body"></div>
+      <div class="row">
+        <button class="btn-ghost" onclick="App.goto('condition')">← Adjust details</button>
+        <button class="btn-primary" onclick="App.restart()">Start over</button>
+      </div>
+    </section>
+
+    <footer>
+      TruePrice is a demonstration MVP built on a synthetic dataset. Not affiliated with Cars24.
+      Estimates are predictions, not offers.
+    </footer>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
